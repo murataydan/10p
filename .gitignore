@@ -1,6 +1,7 @@
 # Projeye ozel dosyalar
 *.db
 *.csv
+!csv/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
