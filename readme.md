@@ -40,7 +40,7 @@ Bu proje;
 4. Projeyi şu komut satırı ile çalıştırın:
 
 	```bash
-	python -m src.proje
+	python -m 10p
 	```
 
 ## Lisans
