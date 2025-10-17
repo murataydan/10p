@@ -79,7 +79,7 @@ def csv_oku_ve_veritabani_yaz(csv_yolu, baglanti):
                         i += 1
                         continue
 
-                    # Çalışma verilerini veritabanına ekle
+                    # Çalışma verisini veritabanına ekle
                     imlec.execute("""
                         INSERT INTO Calismalar (
                             kullanici_adi, sn, tarih, metin_no, sure, toplam_vurus, 
@@ -89,7 +89,7 @@ def csv_oku_ve_veritabani_yaz(csv_yolu, baglanti):
                     """, (
                         kullanici_adi,
                         int(alanlar[0]),
-                        alanlar[1],
+                        tarih_donusumu(alanlar[1]),
                         int(alanlar[2]),
                         float(alanlar[3].replace(",", ".")),
                         int(alanlar[4]),
@@ -111,3 +111,13 @@ def csv_oku_ve_veritabani_yaz(csv_yolu, baglanti):
 
     baglanti.commit()
     print("İşlem tamamlandı. Veritabanı hazır.")
+
+def tarih_donusumu(tarih_str):
+    """
+    Tarih formatını "MM/DD/YYYY HH:MM:SS AM/PM" formatından "YYYY-MM-DD HH:MM:SS" formatına dönüştürür.
+
+    tarih_str (str): Dönüştürülecek tarih stringi
+    str: Dönüştürülmüş tarih stringi
+    """
+    dt = datetime.strptime(tarih_str, "%m/%d/%Y %I:%M:%S %p")
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
