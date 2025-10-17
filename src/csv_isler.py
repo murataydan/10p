@@ -110,4 +110,4 @@ def csv_oku_ve_veritabani_yaz(csv_yolu, baglanti):
             i += 1
 
     baglanti.commit()
-    print("CSV verileri başarıyla veritabanına aktarıldı.")
+    print("İşlem tamamlandı. Veritabanı hazır.")

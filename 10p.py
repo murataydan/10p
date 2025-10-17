@@ -25,7 +25,7 @@ def main():
     if csv_dosyasi is None:
         print("İşlenecek CSV dosyası bulunamadı.")
     else:
-        print(f"İşlenecek dosya bulundu: {csv_dosyasi}")
+        print(f"İşlenecek dosya: {csv_dosyasi}")
 
         # CSV dosyasını okuyup veritabanına aktar
         csv_oku_ve_veritabani_yaz(csv_dosyasi, baglanti)
