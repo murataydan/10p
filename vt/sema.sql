@@ -2,6 +2,7 @@
 DROP TABLE IF EXISTS Ogrenciler;
 DROP TABLE IF EXISTS Calismalar;
 DROP VIEW IF EXISTS Sure5_Hata1_EnAz5;
+DROP VIEW IF EXISTS Sure5_Hata1_Son1Ay;
 
 -- Öğrencilerin temel bilgilerini saklayan tablo
 CREATE TABLE Ogrenciler (
@@ -44,3 +45,27 @@ WHERE c.sure >= 5 AND c.hata_orani < 1
 GROUP BY c.kullanici_adi
 HAVING COUNT(*) >= 5
 ORDER BY ortalama_dakikalik_net_vurus DESC, ortalama_hata_orani ASC, calisma_sayisi DESC;
+
+-- 5 dk. ve üstü sürede %1'den az hata ile son 30 günde yapılan çalışmalar
+CREATE VIEW Sure5_Hata1_Son1Ay AS
+SELECT
+    c.kullanici_adi,
+    o.ad || ' ' || o.soyad AS ad_soyad,
+    COUNT(*) AS calisma_sayisi,
+    ROUND(AVG(c.dakikalik_net_vurus), 2) AS ortalama_dakikalik_net_vurus,
+    MIN(c.dakikalik_net_vurus) AS en_dusuk_dakikalik_net_vurus,
+    MAX(c.dakikalik_net_vurus) AS en_yuksek_dakikalik_net_vurus,
+    ROUND(AVG(c.hata_orani), 2) AS ortalama_hata_orani
+FROM Calismalar c
+JOIN Ogrenciler o ON c.kullanici_adi = o.kullanici_adi
+WHERE
+    c.sure >= 5
+    AND c.hata_orani < 1
+    AND DATE(c.tarih) >= DATE(
+        (SELECT MAX(DATE(tarih)) FROM Calismalar), '-30 days'
+    )
+GROUP BY c.kullanici_adi
+ORDER BY
+    ortalama_dakikalik_net_vurus DESC,
+    ortalama_hata_orani ASC,
+    calisma_sayisi DESC;
