@@ -20,11 +20,8 @@ def veritabani_baglan(vt_adresi="vt/10p.db"):
 def veritabani_sifirla(baglanti, sema_adresi="vt/sema.sql"):
     """
     Belirtilen SQL şema dosyasını çalıştırarak veritabanını sıfırlar.
-    Yani: Var olan tabloları siler ve şemaya göre yeniden oluşturur.
-
-    Args:
-        baglanti (sqlite3.Connection): Aktif veritabanı bağlantısı
-        sema_adresi (str): SQL şema dosyasının yolu (varsayılan: 'vt/sema.sql')
+    Her SQL ifadesi tek tek çalıştırılır, bilgiler ve hatalar konsola yazdırılır.
+    Eğer herhangi bir ifade hata verirse tüm işlem rollback yapılır.
     """
     if baglanti is None:
         raise ValueError("Geçerli veritabanı bağlantısı bulunamadı.")
@@ -35,12 +32,35 @@ def veritabani_sifirla(baglanti, sema_adresi="vt/sema.sql"):
     except OSError as e:
         raise RuntimeError(f"Şema dosyası okunamadı: {e}") from e
 
+    cur = baglanti.cursor()
+    errors = []
+
     try:
-        baglanti.executescript(sema)  # Tüm betiği bir kerede çalıştır
-        baglanti.commit()  # Değişiklikleri kalıcı hale getir
-    except sqlite3.Error as e:
+        # Transaction başlat
+        baglanti.execute("BEGIN")
+        # Basit ayırma: noktalı virgüle göre ayır ve boş parçaları atla
+        for raw_stmt in sema.split(";"):
+            stmt = raw_stmt.strip()
+            if not stmt:
+                continue
+            try:
+                cur.execute(stmt)
+                print(f"[TAMAM] {stmt.splitlines()[0][:120]}")
+            except sqlite3.Error as e:
+                print(f"[HATA] {e}\n  Komut (kısaltılmış): {stmt[:200]}")
+                errors.append((stmt, e))
+                # Hata anında devam etmek yerine rollback ve çıkmak isterseniz hemen raise edin.
+                # continue ile tüm komutları denemek mümkün; şu an hata varsa transaction rollback yapılacak.
+        if errors:
+            baglanti.rollback()
+            first_err = errors[0][1]
+            raise RuntimeError(f"Şema uygulanırken {len(errors)} hata oluştu. İlk hata: {first_err}") from first_err
+        else:
+            baglanti.commit()
+            print("[TAMAM] Veritabanı kayda hazır.")
+    except Exception:
         try:
             baglanti.rollback()
         except Exception:
             pass
-        raise RuntimeError(f"Veritabanı oluşturulurken hata: {e}") from e
+        raise
