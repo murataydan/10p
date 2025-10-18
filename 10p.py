@@ -14,7 +14,8 @@ def main():
     baglanti = veritabani_baglan()
 
     # Eğer ihtiyaç varsa veritabanını sıfırla (şemayı tekrar yükle)
-    veritabani_sifirla(baglanti, sema_adresi="vt/sema.sql")
+    print("Veritabanı şeması yükleniyor...")
+    veritabani_sifirla(baglanti, sema_adresi="vt/sema/")
 
     # CSV dosyalarının bulunduğu klasörü belirt
     csv_klasoru = "csv"
@@ -23,7 +24,7 @@ def main():
     csv_dosyasi = en_guncel_csv_dosyasini_bul(csv_klasoru)
     
     if csv_dosyasi is None:
-        print("İşlenecek CSV dosyası bulunamadı.")
+        print("x İşlenecek CSV dosyası bulunamadı.")
     else:
         print(f"İşlenecek dosya: {csv_dosyasi}")
 

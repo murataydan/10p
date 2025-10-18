@@ -1,3 +1,5 @@
+import os
+import glob
 import sqlite3
 
 def veritabani_baglan(vt_adresi="vt/10p.db"):
@@ -5,11 +7,8 @@ def veritabani_baglan(vt_adresi="vt/10p.db"):
     Belirtilen dosya yolundaki SQLite veritabanına bağlanır.
     Dosya mevcut değilse oluşturur.
 
-    Args:
-        vt_adresi (str): Veritabanı dosyasının adresi (varsayılan: '10p.db')
-
-    Returns:
-        sqlite3.Connection: Veritabanı bağlantı nesnesi
+    vt_adresi (str): Veritabanı dosyasının adresi (varsayılan: '10p.db')
+    sqlite3.Connection: Veritabanı bağlantı nesnesi
     """
     try:
         return sqlite3.connect(vt_adresi)
@@ -17,50 +16,48 @@ def veritabani_baglan(vt_adresi="vt/10p.db"):
         raise RuntimeError(f"Veritabanına bağlanılamadı: {e}") from e
 
 
-def veritabani_sifirla(baglanti, sema_adresi="vt/sema.sql"):
+def veritabani_sifirla(baglanti, sema_adresi="vt/sema"):
     """
-    Belirtilen SQL şema dosyasını çalıştırarak veritabanını sıfırlar.
-    Her SQL ifadesi tek tek çalıştırılır, bilgiler ve hatalar konsola yazdırılır.
-    Eğer herhangi bir ifade hata verirse tüm işlem rollback yapılır.
+    *.sql dosyaları alfabetik sırada çalıştırılır.
+    - Her dosya kendi transaction'ında çalıştırılır; hata olursa o dosya rollback edilir ve hata fırlatılır.
+
+    baglanti (sqlite3.Connection): Veritabanı bağlantısı
+    sema_adresi (str): SQL şema dosyası ya da dizin yolu
     """
     if baglanti is None:
         raise ValueError("Geçerli veritabanı bağlantısı bulunamadı.")
 
-    try:
-        with open(sema_adresi, "r", encoding="utf-8") as f:
-            sema = f.read()  # SQL komutlarını dosyadan oku
-    except OSError as e:
-        raise RuntimeError(f"Şema dosyası okunamadı: {e}") from e
+    # Dosya listesi oluştur
+    files = []
+    if os.path.isdir(sema_adresi):
+        # dizindeki .sql dosyalarını sırala
+        files = sorted(glob.glob(os.path.join(sema_adresi, "*.sql")))
+        if not files:
+            raise RuntimeError(f"x Şema dizini boş: {sema_adresi}")
+    elif os.path.isfile(sema_adresi):
+        files = [sema_adresi]
+    else:
+        raise RuntimeError(f"x Şema yolu bulunamadı: {sema_adresi}")
 
     cur = baglanti.cursor()
-    errors = []
-
-    try:
-        # Transaction başlat
-        baglanti.execute("BEGIN")
-        # Basit ayırma: noktalı virgüle göre ayır ve boş parçaları atla
-        for raw_stmt in sema.split(";"):
-            stmt = raw_stmt.strip()
-            if not stmt:
-                continue
-            try:
-                cur.execute(stmt)
-                print(f"[TAMAM] {stmt.splitlines()[0][:120]}")
-            except sqlite3.Error as e:
-                print(f"[HATA] {e}\n  Komut (kısaltılmış): {stmt[:200]}")
-                errors.append((stmt, e))
-                # Hata anında devam etmek yerine rollback ve çıkmak isterseniz hemen raise edin.
-                # continue ile tüm komutları denemek mümkün; şu an hata varsa transaction rollback yapılacak.
-        if errors:
-            baglanti.rollback()
-            first_err = errors[0][1]
-            raise RuntimeError(f"Şema uygulanırken {len(errors)} hata oluştu. İlk hata: {first_err}") from first_err
-        else:
-            baglanti.commit()
-            print("[TAMAM] Veritabanı kayda hazır.")
-    except Exception:
+    for fpath in files:
         try:
-            baglanti.rollback()
-        except Exception:
-            pass
-        raise
+            with open(fpath, "r", encoding="utf-8") as f:
+                sql = f.read()
+        except OSError as e:
+            raise RuntimeError(f"Şema dosyası okunamadı: {fpath}: {e}") from e
+
+        print(f"- {os.path.basename(fpath)} çalıştırılıyor.")
+        try:
+            baglanti.execute("BEGIN")
+            # executescript tüm dosyayı tek seferde çalıştırır (DOSYA İÇİNDE birden fazla ifade olabilir)
+            cur.executescript(sql)
+            baglanti.commit()
+            print(f"+ {os.path.basename(fpath)} başarıyla uygulandı.")
+        except sqlite3.Error as e:
+            try:
+                baglanti.rollback()
+            except Exception:
+                pass
+            print(f"x {os.path.basename(fpath)} sırasında hata: {e}")
+            raise RuntimeError(f"Şema uygulama hatası ({os.path.basename(fpath)}): {e}") from e
