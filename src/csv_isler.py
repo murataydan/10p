@@ -1,6 +1,41 @@
 import re
 from datetime import datetime
 
+def ismi_ayristir(ham_isim):
+    """
+    Gelen isimden soyadını ayrıştırır.
+    - Sondaki 1 veya 2 kelime eğer tamamen BÜYÜK harfse soyad olarak alınır.
+    - Geri kalan kelimeler ad olarak alınır.
+    - Eğer sondaki kelime BÜYÜK değilse (beklenmedik durum), son kelime soyad kabul edilir.
+    - Ad: Her kelimenin ilk harfi büyük, geri kısmı küçük şeklinde döner.
+    - Soyad: Tamamen büyük harf olarak döner.
+    """
+    toks = [t.strip() for t in ham_isim.split() if t.strip()]
+    if not toks:
+        return "", ""
+
+    # Sondan başlayarak 1 veya 2 kelimeyi soyad olarak al (tamamen büyük harfli olanlar)
+    surname_tokens = []
+    given_tokens = toks.copy()
+
+    if toks[-1].isupper():
+        surname_tokens.insert(0, toks[-1])
+        given_tokens = toks[:-1]
+        # Eğer sondan bir önceki de tamamen büyükse iki kelimelik soyad al
+        if len(toks) >= 2 and toks[-2].isupper():
+            surname_tokens.insert(0, toks[-2])
+            given_tokens = toks[:-2]
+    else:
+        # Fallback: son kelimeyi soyad al
+        if len(toks) == 1:
+            return toks[0].capitalize(), ""
+        surname_tokens = [toks[-1]]
+        given_tokens = toks[:-1]
+
+    ad = " ".join(t.capitalize() for t in given_tokens).strip()
+    soyad = " ".join(t.upper() for t in surname_tokens).strip()
+    return ad, soyad
+
 def csv_oku_ve_veritabani_yaz(csv_yolu, baglanti):
     """
     Verilen CSV dosyasını okuyup ayrıştırır ve veritabanına yazar.
@@ -44,9 +79,9 @@ def csv_oku_ve_veritabani_yaz(csv_yolu, baglanti):
                 ad_soyad = parcalar[1].strip()
                 kullanici_adi = re.search(r"\((.*?)\)", parcalar[2]).group(1).strip()
 
-                # İsim ve soyadı ayırma (ilk kelime ad, geri kalan soyad)
-                ad, *soyad_list = ad_soyad.split()
-                soyad = " ".join(soyad_list)
+                # Yeni ayrıştırma: sondaki 1 veya 2 tamamı büyük kelime(ler) soyad,
+                # kalanlar ad. Ad Title case, soyad UPPER.
+                ad, soyad = ismi_ayristir(ad_soyad)
 
                 # Öğrenci bilgilerini veritabanına ekle veya güncelle
                 imlec.execute("""
@@ -79,7 +114,7 @@ def csv_oku_ve_veritabani_yaz(csv_yolu, baglanti):
                         i += 1
                         continue
 
-                    # Çalışma verilerini veritabanına ekle
+                    # Çalışma verisini veritabanına ekle
                     imlec.execute("""
                         INSERT INTO Calismalar (
                             kullanici_adi, sn, tarih, metin_no, sure, toplam_vurus, 
@@ -89,7 +124,7 @@ def csv_oku_ve_veritabani_yaz(csv_yolu, baglanti):
                     """, (
                         kullanici_adi,
                         int(alanlar[0]),
-                        alanlar[1],
+                        tarih_donusumu(alanlar[1]),
                         int(alanlar[2]),
                         float(alanlar[3].replace(",", ".")),
                         int(alanlar[4]),
@@ -110,4 +145,14 @@ def csv_oku_ve_veritabani_yaz(csv_yolu, baglanti):
             i += 1
 
     baglanti.commit()
-    print("CSV verileri başarıyla veritabanına aktarıldı.")
+    print("İşlem tamamlandı. Veritabanı hazır.")
+
+def tarih_donusumu(tarih_str):
+    """
+    Tarih formatını "MM/DD/YYYY HH:MM:SS AM/PM" formatından "YYYY-MM-DD HH:MM:SS" formatına dönüştürür.
+
+    tarih_str (str): Dönüştürülecek tarih stringi
+    str: Dönüştürülmüş tarih stringi
+    """
+    dt = datetime.strptime(tarih_str, "%m/%d/%Y %I:%M:%S %p")
+    return dt.strftime("%Y-%m-%d %H:%M:%S")

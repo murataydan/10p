@@ -2,30 +2,29 @@
 
 Python tabanlı bu proje, bir öğrenci performans izleme yardımcısıdır. Süratli on parmak yazma egzersizlerinden elde edilen CSV verilerini okuyarak SQLite veritabanına kaydeder. Proje bu yönüyle Python ile CSV işleme ve SQLite veritabanı işlemlerinin nasıl yapılabildiğine de bir örnek niteliğindedir.
 
-On parmak daktilo eğitimi için TürkEgitim.net sitesinde yayımlanan [Uzaktan F Klavye Eğitimi Uygulaması](https://turkegitim.net/FKlavye/) esas alınmıştır. Proje, bu uygulamanın F Klavye ile on parmak yazma eğitimi sırasında topladığı öğrenci çalışma verisinin ileri analiz sürecine katkı sağlamayı amaçlar. Bunun için, uygulamanın eğitmenlere sunduğu CSV uzantılı "Öğrenci Çalışmaları" dosyasını işleyerek, "Sürat Çalışmaları" verisi ile bir SQLite veritabanı (vt/10p.db) oluşturur. Veritabanında öğrenci listesinin ve çalışma dökümlerinin yer aldığı iki ayrı tablo kurgulanmıştır.
+On parmak süratli daktilo/klavye yazma eğitimi için TurkEgitim.net sitesinde yayımlanan [Uzaktan F Klavye Eğitimi Uygulaması](https://turkegitim.net/FKlavye/) esas alınmıştır. Proje, bu uygulamanın F Klavye ile on parmak yazma eğitimi sırasında topladığı öğrenci çalışma verisinin ileri analiz sürecine katkı sağlamayı amaçlar. Bunun için, uygulamanın eğitmenlere sunduğu CSV uzantılı "Öğrenci Çalışmaları" dosyasını işleyerek, "Sürat Çalışmaları" verisi ile bir SQLite veritabanı (vt/10p.db) oluşturur. Temel tablolara ek olarak kullanışlı görünümler hazırlar.
 
 ## Özellikler
 
 Bu proje;
 - En güncel CSV dosyasını otomatik olarak seçer.
-- Öğrenci listesi ve çalışma verisini tablolar halinde derler.
-- Okunan veri, ileri çözümleme ve değerlendirme için SQLite veritabanına (vt/10p.db) kaydedilir.
-- Modüler ve anlaşılır kod yapısına sahiptir. Hemen her bölüm açıklamalar ile desteklenmiştir.
-- Geliştirmeye açıktır.
+- vt/sema/ klasörüne kaydedilecek dosyaları otomatik olarak tarar ve işler.
+- Açıklamalar ile desteklenmiş, modüler yapı sayesinde kolayca yönetilebilir.
 
 ## Proje Yapısı
 
 ```plaintext
 10p/
-├── csv/               # İşlenecek CSV dosyaları
-├── vt/                # Veritabanı dosyaları
-│   ├── 10p.db         # Oluşturulacak veritabanı dosyası
-│   └── sema.sql       # Veritabanı şeması
-└── src/               # Proje kaynak dosyaları
-    ├── csv_isler.py   # CSV okuma ve veritabanı işlemleri
-    ├── vt_isler.py    # Veritabanı işlemleri
-    ├── dosya_isler.py # Dosya işlemleri
-    └── proje.py       # Ana çalışma dosyası
+├── csv/                # İşlenecek CSV dosyaları
+├── vt/                 # Veritabanı dosyaları
+│   ├── 10p.db          # Oluşturulacak veritabanı dosyası
+│   └── sema/           # Veritabanı şemaları
+└── src/                # Proje kaynak dosyaları
+    ├── csv_isler.py    # CSV okuma ve veritabanı işlemleri
+    ├── vt_isler.py     # Veritabanı işlemleri
+    └── dosya_isler.py  # Dosya işlemleri
+    10p.py              # Ana çalışma dosyası
+	...
 ```
 
 ## Kurulum ve Çalıştırma
