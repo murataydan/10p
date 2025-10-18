@@ -34,6 +34,7 @@ CREATE TABLE Calismalar (
 CREATE VIEW GunlukSure30Ustu AS
 SELECT
     kullanici_adi,
+    ad_soyad,
     COUNT(*) AS calismalar,
     MIN(tarih) AS tarih1,
     MAX(tarih) AS tarih2,
@@ -51,8 +52,7 @@ SELECT
 FROM (
     SELECT 
         o.kullanici_adi,
-        o.ad,
-        o.soyad,
+        o.ad || ' ' || o.soyad AS ad_soyad,
         DATE(c.tarih) AS tarih,
         SUM(c.sure) AS gunluk_sure,
         COUNT(DISTINCT c.metin_no) AS FM_sayisi,
@@ -66,13 +66,17 @@ FROM (
         Calismalar c
     JOIN 
         Ogrenciler o ON c.kullanici_adi = o.kullanici_adi
+    WHERE
+        c.dakikalik_net_vurus >= 100 AND c.hata_orani <= 3
     GROUP BY 
         c.kullanici_adi, DATE(c.tarih)
     HAVING 
         SUM(c.sure) >= 30
 ) AS g
 GROUP BY
-    g.kullanici_adi;
+    g.kullanici_adi
+ORDER BY
+    calismalar DESC, sure_ortalama DESC, FM_orani DESC;
 
 -- Sure5_Hata1_EnAz5: 5 dk. ve üstü sürede %1'den az hata ile en az 5 çalışma
 CREATE VIEW Sure5_Hata1_EnAz5 AS
